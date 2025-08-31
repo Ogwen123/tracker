@@ -27,7 +27,6 @@ const ColourPicker = ({ id, colour, type, setColour }: ColourPickerProps) => {
                         <XMarkIcon
                             className="size-6"
                             onClick={() => {
-                                console.log("huh");
                                 setShowPicker(false);
                             }}
                         />
@@ -48,6 +47,7 @@ const ColourPicker = ({ id, colour, type, setColour }: ColourPickerProps) => {
                                     }}
                                     onClick={() => {
                                         setColour(id, index, type);
+                                        setShowPicker(false);
                                     }}
                                 ></div>
                             );

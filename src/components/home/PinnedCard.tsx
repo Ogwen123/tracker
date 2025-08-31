@@ -127,12 +127,12 @@ const PinnedCard = ({ task, setPinnedTasks, setAlert }: PinnedCardProps) => {
             <div className="flex flex-col w-[20%]">
                 <Link
                     to={"/task/" + task.id}
-                    className="rounded-md bg-main h-[50%] flex-grow mt-[5px] fc"
+                    className="rounded-md bg-main h-[50%] flex-grow mt-[5px] fc hover:bg-maindark"
                 >
                     View Task
                 </Link>
                 <button
-                    className="rounded-md bg-main h-[50%] flex-grow mt-[5px] fc"
+                    className="rounded-md bg-main h-[50%] flex-grow mt-[5px] fc hover:bg-maindark"
                     onClick={completeTask}
                 >
                     {task.completed ? (

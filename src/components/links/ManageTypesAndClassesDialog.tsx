@@ -8,9 +8,10 @@ import React, { ChangeEvent } from "react";
 import Alert, { alertReset } from "../Alert";
 import { _Alert, _Task, LinkClass, LinkType } from "../../global/types";
 import LoadingWheel from "../LoadingWheel";
-import { PlusIcon, XMarkIcon } from "@heroicons/react/20/solid";
+import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/20/solid";
 import { useData } from "../../App";
 import ColourPicker from "./ColourPicker";
+import { url } from "../../utils/url";
 
 interface NewDialogProps {
     open: boolean;
@@ -90,9 +91,135 @@ const ManageTypesAndClassesDialog = ({
         }
     };
 
-    React.useEffect(() => {
-        console.log(editedTypes);
-    }, [editedTypes]);
+    const deleteTypeOrClass = (item: "TYPE" | "CLASS", id: string) => {
+        const link =
+            url("tracker") + "link/" + (item === "CLASS" ? "class" : "type");
+
+        fetch(link, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: "Bearer " + user.token,
+            },
+            body: JSON.stringify({
+                id,
+            }),
+        }).then((res) => {
+            if (!res.ok) {
+                res.json().then((data) => {
+                    setAlert([
+                        data.error instanceof Array
+                            ? data.error[0]
+                            : data.error,
+                        "ERROR",
+                        true,
+                    ]);
+                    setSubmitting(false);
+                });
+            } else {
+                res.json().then((data) => {
+                    setSubmitting(false);
+
+                    if (data.success === true) {
+                        if (item === "CLASS") {
+                            setEditedClasses((prev) =>
+                                prev?.filter((class_) => class_.id !== id),
+                            );
+                        } else {
+                            setEditedTypes((prev) =>
+                                prev?.filter((type_) => type_.id !== id),
+                            );
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const updateTypesAndClasses = async (
+        types: LinkType[],
+        classes: LinkClass[],
+    ): Promise<[LinkClass[], LinkType[]]> => {
+        let newTypes: LinkType[] = [];
+        let newClasses: LinkClass[] = [];
+        try {
+            const res = await fetch(url("tracker") + "links/types", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: "Bearer " + user.token,
+                },
+                body: JSON.stringify({
+                    items: types,
+                }),
+            });
+
+            if (!res.ok) {
+                let data = await res.json();
+
+                setAlert([
+                    data.error instanceof Array ? data.error[0] : data.error,
+                    "ERROR",
+                    true,
+                ]);
+                newTypes = types;
+            } else {
+                let data = await res.json();
+
+                console.log("setting new types");
+                newTypes = data.data as LinkType[];
+            }
+        } catch (e) {
+            console.log(e);
+            setAlert([
+                "An unknown error occured whilst updating the types.",
+                "ERROR",
+                true,
+            ]);
+            setSubmitting(false);
+            newTypes = types;
+        }
+
+        try {
+            const res = await fetch(url("tracker") + "links/classes", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: "Bearer " + user.token,
+                },
+                body: JSON.stringify({
+                    items: classes,
+                }),
+            });
+
+            if (!res.ok) {
+                let data = await res.json();
+
+                setAlert([
+                    data.error instanceof Array ? data.error[0] : data.error,
+                    "ERROR",
+                    true,
+                ]);
+                newClasses = classes;
+            } else {
+                let data = await res.json();
+
+                console.log("setting new classes");
+                newClasses = data.data as LinkClass[];
+            }
+        } catch (e) {
+            console.log(e);
+            setAlert([
+                "An unknown error occured whilst updating the types.",
+                "ERROR",
+                true,
+            ]);
+            setSubmitting(false);
+            newClasses = classes;
+        }
+
+        return [newClasses, newTypes];
+    };
 
     const save = () => {
         if (editedClasses === undefined || editedTypes === undefined) return;
@@ -107,6 +234,7 @@ const ManageTypesAndClassesDialog = ({
                     true,
                 ]);
                 setSubmitting(false);
+                return;
             }
         });
         editedTypes.forEach((val) => {
@@ -117,11 +245,24 @@ const ManageTypesAndClassesDialog = ({
                     true,
                 ]);
                 setSubmitting(false);
+                return;
             }
+        });
+
+        updateTypesAndClasses(editedTypes, editedClasses).then((res) => {
+            console.log(res);
+            setEditedClasses(res[0]);
+            setEditedTypes(res[1]);
+            setSubmitting(false);
         });
     };
 
     const close = () => {
+        // reset edited data to inital state
+        setEditedClasses(classes);
+        setEditedTypes(types);
+
+        setSubmitting(false);
         setAlert(alertReset);
         setOpen(false);
     };
@@ -207,8 +348,8 @@ const ManageTypesAndClassesDialog = ({
                                                         className={
                                                             "p-[5px] flex flex-row h-[34px] " +
                                                             (index % 2 === 0
-                                                                ? "bg-bgdark/50"
-                                                                : "bg-bgdark") +
+                                                                ? "bg-bgdark"
+                                                                : "bg-bgdark/50") +
                                                             " " +
                                                             (index === 0
                                                                 ? "rounded-t-lg"
@@ -222,7 +363,7 @@ const ManageTypesAndClassesDialog = ({
                                                         }
                                                     >
                                                         <input
-                                                            className="w-5/6"
+                                                            className="w-9/12 border-1 border-main/50 rounded-lg pl-[5px] mr-[10px]"
                                                             value={type_.name}
                                                             onChange={(e) => {
                                                                 setEditedTypes(
@@ -252,7 +393,7 @@ const ManageTypesAndClassesDialog = ({
                                                         />
 
                                                         <div className="w-[1px] bg-hr h-full "></div>
-                                                        <div className="w-1/6 fc">
+                                                        <div className="w-2/12 fc">
                                                             <ColourPicker
                                                                 id={type_.id}
                                                                 colour={
@@ -264,6 +405,18 @@ const ManageTypesAndClassesDialog = ({
                                                                 }
                                                             />
                                                         </div>
+                                                        <div className="w-[1px] bg-hr h-full "></div>
+                                                        <div className="w-1/12 fc">
+                                                            <TrashIcon
+                                                                className="size-5 hover:fill-error"
+                                                                onClick={() =>
+                                                                    deleteTypeOrClass(
+                                                                        "TYPE",
+                                                                        type_.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
                                                     </div>
                                                 );
                                             })
@@ -271,7 +424,7 @@ const ManageTypesAndClassesDialog = ({
                                             <LoadingWheel />
                                         )}
                                         <div
-                                            className="rounded-lg bg-bgdark fc p-[5px] mt-[10px]"
+                                            className="rounded-lg bg-bgdark fc p-[5px] mt-[10px] hover:bg-main"
                                             onClick={() => {
                                                 setEditedTypes((prev) => [
                                                     ...prev!,
@@ -301,8 +454,8 @@ const ManageTypesAndClassesDialog = ({
                                                             className={
                                                                 "p-[5px] flex flex-row " +
                                                                 (index % 2 === 0
-                                                                    ? "bg-bgdark/50"
-                                                                    : "bg-bgdark") +
+                                                                    ? "bg-bgdark"
+                                                                    : "bg-bgdark/50") +
                                                                 " " +
                                                                 (index === 0
                                                                     ? "rounded-t-lg"
@@ -316,7 +469,7 @@ const ManageTypesAndClassesDialog = ({
                                                             }
                                                         >
                                                             <input
-                                                                className="w-5/6"
+                                                                className="w-9/12 border-1 border-main/50 rounded-lg pl-[5px]"
                                                                 value={
                                                                     class_.name
                                                                 }
@@ -350,7 +503,7 @@ const ManageTypesAndClassesDialog = ({
                                                                     );
                                                                 }}
                                                             />
-                                                            <div className="w-1/6 fc">
+                                                            <div className="w-2/12 fc">
                                                                 <ColourPicker
                                                                     id={
                                                                         class_.id
@@ -364,6 +517,18 @@ const ManageTypesAndClassesDialog = ({
                                                                     }
                                                                 />
                                                             </div>
+                                                            <div className="w-[1px] bg-hr h-full "></div>
+                                                            <div className="w-1/12 fc">
+                                                                <TrashIcon
+                                                                    className="size-5 hover:fill-error"
+                                                                    onClick={() =>
+                                                                        deleteTypeOrClass(
+                                                                            "CLASS",
+                                                                            class_.id,
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
                                                         </div>
                                                     );
                                                 },
@@ -372,7 +537,7 @@ const ManageTypesAndClassesDialog = ({
                                             <LoadingWheel size={20} />
                                         )}
                                         <div
-                                            className="rounded-lg bg-bgdark fc p-[5px] mt-[10px]"
+                                            className="rounded-lg bg-bgdark fc p-[5px] mt-[10px] hover:bg-main"
                                             onClick={() => {
                                                 setEditedClasses((prev) => [
                                                     ...prev!,

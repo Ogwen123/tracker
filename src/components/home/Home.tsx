@@ -178,7 +178,7 @@ const Home = () => {
                                     Add a Task
                                     <div className="border-t-[3px] flex-grow border-dotted border-hr mx-[20px]"></div>
                                     <button
-                                        className="bg-main h-[40px] rounded-md min-w-[50px] fc mr-[10px] px-[10px]"
+                                        className="bg-main h-[40px] rounded-md min-w-[50px] fc mr-[10px] px-[10px] hover:bg-maindark"
                                         onClick={() => {
                                             setNewDialog(true);
                                         }}
